@@ -84,16 +84,20 @@ export default function Form() {
     files: yup
       .mixed()
       .required("Please upload PDF file/s")
-      .test("FILE_FORMAT", "Uploaded file has unsupported format.", (value) => {
-        if (value && value?.length > 0) {
-          for (let i = 0; i < value?.length; i++) {
-            if (value[i]?.type != "application/pdf") {
-              return false;
+      .test(
+        "FILE_FORMAT",
+        "Uploaded file has unsupported format.",
+        (value: any) => {
+          if (value && value?.length > 0) {
+            for (let i = 0; i < value?.length; i++) {
+              if (value[i]?.type != "application/pdf") {
+                return false;
+              }
             }
           }
+          return true;
         }
-        return true;
-      }),
+      ),
   });
 
   const {
@@ -145,22 +149,58 @@ export default function Form() {
     },
   });
   useEffect(() => {
-    if (activeStep == 0 && !errors.companyUEN && !errors.companyUEN) {
-      handleNext();
-    } else if (activeStep == 1 && errors.companyName && errors.companyUEN) {
-      handleBack();
+    if (activeStep == 0) {
+      if (
+        touched.companyUEN &&
+        !errors.companyUEN &&
+        touched.companyName &&
+        !errors.companyName
+      ) {
+        handleNext();
+      } else {
+        setActiveStep(0);
+      }
     }
-    if (
-      activeStep == 1 &&
-      !errors.position &&
-      !errors.fullName &&
-      !errors.email &&
-      !errors.reEmail &&
-      errors.phoneNumber
-    ) {
-      handleNext();
+
+    if (activeStep == 1) {
+      if (
+        touched.fullName &&
+        !errors.fullName &&
+        touched.position &&
+        !errors.position &&
+        touched.email &&
+        !errors.email &&
+        touched.reEmail &&
+        !errors.reEmail &&
+        touched.phoneNumber &&
+        !errors.phoneNumber
+      ) {
+        handleNext();
+      } else {
+        setActiveStep(1);
+      }
     }
-  }, [errors]);
+
+    if (activeStep == 2) {
+      if (values.files.length !== 0) {
+        setActiveStep(3);
+      }
+    }
+
+    if (values.termsAndCondition) {
+      handleNext();
+    } else {
+      if (activeStep == 2) {
+        setActiveStep(3);
+      }
+    }
+  }, [errors, touched, values.files.length]);
+
+  useEffect(() => {
+    if (values.files.length === 0 && activeStep === 3) {
+      setActiveStep(2);
+    }
+  }, [values.files.length]);
 
   const handleNext = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
@@ -231,6 +271,7 @@ export default function Form() {
                   </Grid>
                 </StepContent>
               </Step>
+
               <Step>
                 <StepLabel>
                   <StepperHeader>Applicant Information</StepperHeader>
@@ -365,7 +406,7 @@ export default function Form() {
                 </StepLabel>
                 <StepContent TransitionProps={{ in: true }}>
                   <FormHelperText style={{ color: "red" }}>
-                    {errors.termsAndCondition}
+                    {touched.termsAndCondition && errors.termsAndCondition}
                   </FormHelperText>
                   <Typography>
                     <Checkbox
